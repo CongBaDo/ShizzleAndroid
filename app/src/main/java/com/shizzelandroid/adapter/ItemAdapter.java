@@ -14,6 +14,7 @@ import com.shizzelandroid.R;
 import com.shizzelandroid.utils.Listing;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by congba on 7/30/15.
@@ -23,9 +24,9 @@ public class ItemAdapter extends BaseAdapter {
     boolean canLoadMore=true;
     private Context context;
 
-    private ArrayList<Listing> values;
+    private List<Listing> values;
 
-    public ItemAdapter(Context context, ArrayList<Listing> values){
+    public ItemAdapter(Context context, List<Listing> values){
         this.context = context;
         this.values = values;
     }

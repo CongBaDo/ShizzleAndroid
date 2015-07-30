@@ -2,9 +2,10 @@ package com.shizzelandroid.fragments;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -17,32 +18,55 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import com.shizzelandroid.R;
 import com.shizzelandroid.adapter.ItemAdapter;
-import com.shizzelandroid.database.AppDBHelper;
 import com.shizzelandroid.database.AppDataSource;
-import com.shizzelandroid.utils.AppRequestTask;
 import com.shizzelandroid.utils.EbayParser;
+import com.shizzelandroid.utils.EbayRequestLoader;
 import com.shizzelandroid.utils.Listing;
 
-import org.json.JSONObject;
-
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A placeholder fragment containing a simple view.
  */
-public class MainActivityFragment extends Fragment {
+public class MainActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<List<Listing>>, SearchView.OnQueryTextListener {
     private static final String TAG = "MainActivityFragment";
-    private ListView listView;
+
     private ItemAdapter adapter;
     private EbayParser parser;
     private ArrayList<Listing> datas;
-    private AppRequestTask task;
     private ProgressDialog loadingDialog;
-    private SearchView searchView;
+    private View view;
+    private ListView listView;
+
+    @Override
+    public void onLoadFinished(Loader<List<Listing>> loader, List<Listing> data) {
+        Log.v(TAG, "onLoadFinished " + data.size());
+
+        listView = (ListView) view.findViewById(R.id.listView);
+        adapter = new ItemAdapter(getActivity(), data);
+        listView.setAdapter(adapter);
+
+        dismissLoading();
+    }
+
+    @Override
+    public void onLoaderReset(Loader<List<Listing>> loader) {
+
+    }
+
+    @Override
+    public Loader<List<Listing>> onCreateLoader(int id, Bundle args) {
+
+        String query = args.getString("query");
+        Log.v(TAG, "onCreateLoader " + query);
+        EbayRequestLoader requestLoader = new EbayRequestLoader(getActivity(), query);
+        return requestLoader;
+    }
+
     private AppDataSource dataSource;
 
     public void showLoading() {
@@ -63,29 +87,6 @@ public class MainActivityFragment extends Fragment {
     public MainActivityFragment() {
     }
 
-    private AppRequestTask.RequestCallback callback = new AppRequestTask.RequestCallback() {
-        @Override
-        public void onResultPost(JSONObject statusObj) {
-            Log.v(TAG, "onResultPost " + statusObj);
-
-            //hideKeyboard();
-            dismissLoading();
-            datas = parser.parseData(statusObj);
-
-            if (datas.size() == 0) {
-                return;
-            }
-            adapter = new ItemAdapter(getActivity(), datas);
-            listView.setAdapter(adapter);
-        }
-
-        @Override
-        public void fail() {
-            dismissLoading();
-            Toast.makeText(getActivity(), "Your request fail, please try again", Toast.LENGTH_SHORT).show();
-        }
-    };
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -97,25 +98,20 @@ public class MainActivityFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.fragment_main,
+        view = inflater.inflate(R.layout.fragment_main,
                 container, false);
         Log.e(TAG, "onCreateView ");
 
 
-        AppDBHelper helper = new AppDBHelper(getActivity());
-        SQLiteDatabase database = helper.getWritableDatabase();
-        dataSource = new AppDataSource(database);
-//        List list = dataSource.read();
-//        dataSource.insert()
-        helper.close();
-        database.close();
+//        AppDBHelper helper = new AppDBHelper(getActivity());
+//        SQLiteDatabase database = helper.getWritableDatabase();
+//        dataSource = new AppDataSource(database);
+////        List list = dataSource.read();
+////        dataSource.insert()
+//        helper.close();
+//        database.close();
 
         listView = (ListView) view.findViewById(R.id.listView);
-        parser = new EbayParser(getActivity());
-
-        task = new AppRequestTask("fantasy", callback);
-        task.execute();
-
         showLoading();
         listView.setOnScrollListener(new OnScrollListener() {
 
@@ -134,35 +130,19 @@ public class MainActivityFragment extends Fragment {
             }
         });
 
+        Bundle bundle = new Bundle();
+        bundle.putString("query", "fantasy");
+        getLoaderManager().initLoader(0, bundle, this).forceLoad();
+
         return view;
     }
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.menu_main, menu);
-        MenuItem item = menu.findItem(R.id.action_search);
 
-        searchView = (SearchView) menu.findItem(R.id.action_search).getActionView();
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                Log.e(TAG, "onQueryTextSubmit" + query);
-
-                if (task != null) {
-                    showLoading();
-                    task.onCancelled();
-                    task = new AppRequestTask(query.trim(), callback);
-                    task.execute();
-                }
-                return false;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                Log.e(TAG, "onQueryTextChange" + newText);
-                return false;
-            }
-        });
+        SearchView searchView = (SearchView) menu.findItem(R.id.action_search).getActionView();
+        searchView.setOnQueryTextListener(this);
     }
 
     @Override
@@ -180,5 +160,23 @@ public class MainActivityFragment extends Fragment {
     private void hideKeyboard() {
         InputMethodManager inputMethodManager = (InputMethodManager) getActivity().getSystemService(Activity.INPUT_METHOD_SERVICE);
         inputMethodManager.hideSoftInputFromWindow(getActivity().getCurrentFocus().getWindowToken(), 0);
+    }
+
+    @Override
+    public boolean onQueryTextSubmit(String query) {
+
+        if (query.length() > 0) {
+            showLoading();
+            Bundle bundle = new Bundle();
+            bundle.putString("query", query);
+            getLoaderManager().restartLoader(0, bundle, this).forceLoad();
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean onQueryTextChange(String newText) {
+        return false;
     }
 }
