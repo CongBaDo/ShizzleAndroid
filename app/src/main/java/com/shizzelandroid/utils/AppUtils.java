@@ -4,6 +4,10 @@ import android.content.res.Resources;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -22,40 +26,36 @@ public class AppUtils {
     private static final String TAG = "AppUtils";
 
     private Resources resources;
+//    private OkHttpClient httpClient;
 
-    public static String search(String keyword) throws Exception{
+    public static String search(String keyword) throws Exception {
         String jsonResponse = null;
         jsonResponse = requestData(keyword);
-        if((jsonResponse == null)||(jsonResponse.length() < 1)){
-            throw(new Exception("No result received from invokeEbayRest("+keyword+")"));
+        if ((jsonResponse == null) || (jsonResponse.length() < 1)) {
+            throw (new Exception("No result received from invokeEbayRest(" + keyword + ")"));
         }
-        return(jsonResponse);
+        return (jsonResponse);
     }
 
-    private static String getRequestURL(String keyword){
+    private static String getRequestURL(String keyword) {
         CharSequence requestURL = TextUtils.expandTemplate(AppConstant.EBAY_TEMPLATE, AppConstant.EBAY_API_PRODUCTION, AppConstant.APP_ID_PRODUCTION, keyword);
 
-        Log.e(TAG, "getRequestURL"+requestURL.toString());
-        return(requestURL.toString());
+        Log.e(TAG, "getRequestURL" + requestURL.toString());
+        return (requestURL.toString());
     }
 
-    private static String requestData(String keyword) throws Exception{
-        String result=null;
-        HttpClient httpClient=new DefaultHttpClient();
-        HttpGet httpGet=new HttpGet(getRequestURL(keyword));
-        HttpResponse response=httpClient.execute(httpGet);
-        HttpEntity httpEntity=response.getEntity();
-        if(httpEntity!=null){
-            InputStream in=httpEntity.getContent();
-            BufferedReader reader=new BufferedReader(new InputStreamReader(in));
-            StringBuffer temp=new StringBuffer();
-            String currentLine=null;
-            while((currentLine=reader.readLine())!=null){
-                temp.append(currentLine);
-            }
-            result=temp.toString();
-            in.close();
-        }
-        return(result);
+    private static String requestData(String keyword) throws Exception {
+
+        OkHttpClient httpClient = new OkHttpClient();
+        Request request = new Request.Builder()
+                .url(getRequestURL(keyword))
+                .build();
+
+        Response response = httpClient.newCall(request).execute();
+
+        String result = response.body().string();
+
+        Log.e(TAG, "requestData "+result);
+        return result;
     }
 }
