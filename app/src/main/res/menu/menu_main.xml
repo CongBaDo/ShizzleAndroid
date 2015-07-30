@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:nz.govt.app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_search"
+        android:icon="@android:drawable/ic_menu_search"
+        android:orderInCategory="10"
+        nz.govt.app:actionViewClass="android.support.v7.widget.SearchView"
+        nz.govt.app:showAsAction="ifRoom|collapseActionView"
+        android:title="@string/action_search"></item>
+</menu>
