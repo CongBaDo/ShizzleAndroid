@@ -52,6 +52,7 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
     private View view;
     private ListView listView;
     private String currentQuery;
+    private boolean startSearch = false;
 
     private LoaderManager.LoaderCallbacks<List<Listing>> loaderData = new LoaderManager.LoaderCallbacks<List<Listing>>() {
         @Override
@@ -84,6 +85,11 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
 
             getLoaderManager().initLoader(ID_LOADER_CURSOR, null, loaderCursor);
             dismissLoading();
+
+            if(startSearch){
+                startSearch = false;
+                runable.run();
+            }
         }
 
         @Override
@@ -118,7 +124,6 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
                     if(currentQuery == null || item.getTitle().toLowerCase().contains(currentQuery.toLowerCase())){
                         datas.add(item);
                     }
-
 
                 } while (cursor.moveToNext());
             }
@@ -191,7 +196,6 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
 //        getLoaderManager().initLoader(ID_LOADER_DATA, bundle, loaderData).forceLoad();
 
         getLoaderManager().initLoader(ID_LOADER_CURSOR, null, loaderCursor);
-        //runable.run();
 
         return view;
     }
@@ -231,8 +235,9 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
             Bundle bundle = new Bundle();
             bundle.putString("query", query);
             getLoaderManager().restartLoader(ID_LOADER_DATA, bundle, loaderData).forceLoad();
+            handler.removeCallbacks(runable);
 
-//            handler.removeCallbacks(runable);
+            startSearch = true;
         }
 
         return false;
@@ -250,15 +255,20 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
             // TODO Auto-generated method stub
 //            Log.e(TAG, "onQueryTextChange RUN RUN "+query);
             handler.sendEmptyMessage(100);
-            handler.postDelayed(this, 2000);
+            handler.postDelayed(this, 10000);
         }
     };
 
     protected Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            Log.e("Got a new message", "Start Update HERE " + msg.arg1);
-//            startSearch = true;
+
+            if(currentQuery != null && currentQuery.length() > 0){
+                Bundle bundle = new Bundle();
+                bundle.putString("query", currentQuery);
+                getLoaderManager().restartLoader(ID_LOADER_DATA, bundle, loaderData).forceLoad();
+            }
+            //Log.e("Got a new message", "Start Update HERE " + msg.arg1);
         }
     };
 }
