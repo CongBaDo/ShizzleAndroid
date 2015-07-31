@@ -2,9 +2,14 @@ package com.shizzelandroid.fragments;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.ContentValues;
+import android.database.Cursor;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
@@ -21,7 +26,8 @@ import android.widget.ListView;
 
 import com.shizzelandroid.R;
 import com.shizzelandroid.adapter.ItemAdapter;
-import com.shizzelandroid.database.AppDataSource;
+import com.shizzelandroid.database.AppContentProvider;
+import com.shizzelandroid.database.TodoTable;
 import com.shizzelandroid.utils.EbayParser;
 import com.shizzelandroid.utils.EbayRequestLoader;
 import com.shizzelandroid.utils.Listing;
@@ -32,8 +38,11 @@ import java.util.List;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class MainActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<List<Listing>>, SearchView.OnQueryTextListener {
+public class MainActivityFragment extends Fragment implements SearchView.OnQueryTextListener {
     private static final String TAG = "MainActivityFragment";
+
+    private static final int ID_LOADER_DATA = 0;
+    private static final int ID_LOADER_CURSOR = 1;
 
     private ItemAdapter adapter;
     private EbayParser parser;
@@ -42,32 +51,84 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     private View view;
     private ListView listView;
 
-    @Override
-    public void onLoadFinished(Loader<List<Listing>> loader, List<Listing> data) {
-        Log.v(TAG, "onLoadFinished " + data.size());
+    private LoaderManager.LoaderCallbacks<List<Listing>> loaderData = new LoaderManager.LoaderCallbacks<List<Listing>>() {
+        @Override
+        public Loader<List<Listing>> onCreateLoader(int id, Bundle args) {
+            String query = args.getString("query");
+            EbayRequestLoader requestLoader = new EbayRequestLoader(getActivity(), query);
+            return requestLoader;
+        }
 
-        listView = (ListView) view.findViewById(R.id.listView);
-        adapter = new ItemAdapter(getActivity(), data);
-        listView.setAdapter(adapter);
+        @Override
+        public void onLoadFinished(Loader<List<Listing>> loader, List<Listing> data) {
 
-        dismissLoading();
-    }
+            for (int i = 0; i < data.size(); i++) {
+                ContentValues values = new ContentValues();
+                values.put(TodoTable.COLUMN_CURRENT_COST, data.get(i).getCurrentPrice());
+                values.put(TodoTable.COLUMN_ITEM_ID, data.get(i).getId());
+                values.put(TodoTable.COLUMN_THUMB_URL, data.get(i).getImageUrl());
+                values.put(TodoTable.COLUMN_TITLE, data.get(i).getTitle());
+                values.put(TodoTable.COLUMN_SHIPPING_COST, data.get(i).getShippingCost());
 
-    @Override
-    public void onLoaderReset(Loader<List<Listing>> loader) {
+                getActivity().getContentResolver().insert(AppContentProvider.CONTENT_URI, values);
+            }
 
-    }
+            getLoaderManager().initLoader(ID_LOADER_CURSOR, null, loaderCursor);
+            dismissLoading();
+        }
 
-    @Override
-    public Loader<List<Listing>> onCreateLoader(int id, Bundle args) {
+        @Override
+        public void onLoaderReset(Loader<List<Listing>> loader) {
 
-        String query = args.getString("query");
-        Log.v(TAG, "onCreateLoader " + query);
-        EbayRequestLoader requestLoader = new EbayRequestLoader(getActivity(), query);
-        return requestLoader;
-    }
+        }
+    };
 
-    private AppDataSource dataSource;
+    private LoaderManager.LoaderCallbacks<Cursor> loaderCursor = new LoaderManager.LoaderCallbacks<Cursor>() {
+        @Override
+        public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+
+            Log.v(TAG, "Cursor onCreateLoader " + id);
+            String[] projection = {
+                    TodoTable.COLUMN_ID,
+                    TodoTable.COLUMN_CURRENT_COST,
+                    TodoTable.COLUMN_ITEM_ID,
+                    TodoTable.COLUMN_THUMB_URL,
+                    TodoTable.COLUMN_TITLE,
+                    TodoTable.COLUMN_SHIPPING_COST
+            };
+            CursorLoader cursorLoader = new CursorLoader(getActivity(),
+                    AppContentProvider.CONTENT_URI, projection, null, null, null);
+            return cursorLoader;
+        }
+
+        @Override
+        public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+
+            List<Listing> datas = new ArrayList<Listing>();
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    Listing item = new Listing();
+                    item.setCurrentPrice(cursor.getString(cursor.getColumnIndex(TodoTable.COLUMN_CURRENT_COST)));
+                    item.setId(cursor.getString(cursor.getColumnIndex(TodoTable.COLUMN_ITEM_ID)));
+                    item.setImageUrl(cursor.getString(cursor.getColumnIndex(TodoTable.COLUMN_THUMB_URL)));
+                    item.setShippingCost(cursor.getString(cursor.getColumnIndex(TodoTable.COLUMN_SHIPPING_COST)));
+                    item.setTitle(cursor.getString(cursor.getColumnIndex(TodoTable.COLUMN_TITLE)));
+                    datas.add(item);
+
+                } while (cursor.moveToNext());
+            }
+
+            listView = (ListView)view.findViewById(R.id.listView);
+            adapter = new ItemAdapter(getActivity(), datas);
+            listView.setAdapter(adapter);
+
+        }
+
+        @Override
+        public void onLoaderReset(Loader<Cursor> loader) {
+
+        }
+    };
 
     public void showLoading() {
         loadingDialog = new ProgressDialog(getActivity());
@@ -102,15 +163,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 container, false);
         Log.e(TAG, "onCreateView ");
 
-
-//        AppDBHelper helper = new AppDBHelper(getActivity());
-//        SQLiteDatabase database = helper.getWritableDatabase();
-//        dataSource = new AppDataSource(database);
-////        List list = dataSource.read();
-////        dataSource.insert()
-//        helper.close();
-//        database.close();
-
         listView = (ListView) view.findViewById(R.id.listView);
         showLoading();
         listView.setOnScrollListener(new OnScrollListener() {
@@ -132,7 +184,9 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
         Bundle bundle = new Bundle();
         bundle.putString("query", "fantasy");
-        getLoaderManager().initLoader(0, bundle, this).forceLoad();
+        getLoaderManager().initLoader(ID_LOADER_DATA, bundle, loaderData).forceLoad();
+
+        //runable.run();
 
         return view;
     }
@@ -169,7 +223,9 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             showLoading();
             Bundle bundle = new Bundle();
             bundle.putString("query", query);
-            getLoaderManager().restartLoader(0, bundle, this).forceLoad();
+            getLoaderManager().restartLoader(ID_LOADER_DATA, bundle, loaderData).forceLoad();
+
+//            handler.removeCallbacks(runable);
         }
 
         return false;
@@ -179,4 +235,23 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     public boolean onQueryTextChange(String newText) {
         return false;
     }
+
+    private Runnable runable = new Runnable() {
+
+        @Override
+        public void run() {
+            // TODO Auto-generated method stub
+//            Log.e(TAG, "onQueryTextChange RUN RUN "+query);
+            handler.sendEmptyMessage(100);
+            handler.postDelayed(this, 2000);
+        }
+    };
+
+    protected Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            Log.e("Got a new message", "ALO " + msg.arg1);
+//            startSearch = true;
+        }
+    };
 }

@@ -21,11 +21,11 @@
             </intent-filter>
         </activity>
 
-        <!--<provider-->
-            <!--android:exported="false"-->
-            <!--android:name=".database.AppContentProvider"-->
-            <!--android:authorities="com.shizzletest.database" >-->
-        <!--</provider>-->
+        <provider
+            android:exported="false"
+            android:name=".database.AppContentProvider"
+            android:authorities="com.shizzelandroid.database" >
+        </provider>
     </application>
 
 </manifest>

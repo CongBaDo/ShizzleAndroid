@@ -17,13 +17,13 @@ public class TodoTable {
     public static final String COLUMN_SHIPPING_COST = "Shipping_Cost";
     // Database creation sql statement
     public static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME
-            + "(" + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-            + COLUMN_ITEM_ID + "INTEGER, "
-            + COLUMN_TITLE + " TEXT , "
-            + COLUMN_THUMB_URL + " TEXT , "
+            + "("
+            + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
             + COLUMN_CURRENT_COST + " TEXT , "
+            + COLUMN_ITEM_ID + " TEXT , "
+            + COLUMN_THUMB_URL + " TEXT , "
+            + COLUMN_TITLE + " TEXT , "
             + COLUMN_SHIPPING_COST + " TEXT ); ";
-
 
     public static void onCreate(SQLiteDatabase database) {
         database.execSQL(CREATE_TABLE);
