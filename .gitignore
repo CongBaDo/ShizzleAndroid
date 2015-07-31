@@ -1,7 +1,96 @@
-.gradle
-/local.properties
-/.idea/workspace.xml
-/.idea/libraries
+# Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio
+
+*.iml
+
+## Directory-based project format:
+.idea/
+# if you remove the above rule, at least ignore the following:
+
+# User-specific stuff:
+# .idea/workspace.xml
+# .idea/tasks.xml
+# .idea/dictionaries
+
+# Sensitive or high-churn files:
+# .idea/dataSources.ids
+# .idea/dataSources.xml
+# .idea/sqlDataSources.xml
+# .idea/dynamic.xml
+# .idea/uiDesigner.xml
+
+# Gradle:
+# .idea/gradle.xml
+# .idea/libraries
+
+# Mongo Explorer plugin:                        
+# .idea/mongoSettings.xml
+
+## File-based project format:
+*.ipr
+*.iws
+
+## Plugin-specific files:
+
+# IntelliJ
+/out/
+
+# mpeltonen/sbt-idea plugin
+.idea_modules/
+
+# JIRA plugin
+atlassian-ide-plugin.xml
+
+# Crashlytics plugin (for Android Studio and IntelliJ)
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+
+**/build
+
+# Android
+gen/
+build/
+local.properties
+# Old Android
+bin/
+proguard/
+
+# suggestion: also ignore libs/*.properties files for old eclipse project
+# can't be added here because multiple libs/ directory can be around in different paths
+
+# Idea
+# According to this
+# see http://intellij-support.jetbrains.com/entries/23393067 and http://devnet.jetbrains.com/docs/DOC-1186
+# I shouldn't ignore most of this stuff.. but looking at the content I see environment stuffs in it.
+*.iws
+*.iml
+*.ipr
+.idea
+.gradle/
+out
+
+# Eclipse
+.project
+.classpath
+.settings
+# Eclipse NDK
+.cproject
+
+# Mac
 .DS_Store
-/build
-/captures
+
+# Generic
+*~
+.swp
+
+# Android NDK
+*.o
+*.o.d
+*_g
+*.a
+*.so
+*.pinfo
+*.gcno
+*.bar
+gdbserver
+gdb.setup
