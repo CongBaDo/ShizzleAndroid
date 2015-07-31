@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -50,6 +51,7 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
     private ProgressDialog loadingDialog;
     private View view;
     private ListView listView;
+    private String currentQuery;
 
     private LoaderManager.LoaderCallbacks<List<Listing>> loaderData = new LoaderManager.LoaderCallbacks<List<Listing>>() {
         @Override
@@ -70,7 +72,14 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
                 values.put(TodoTable.COLUMN_TITLE, data.get(i).getTitle());
                 values.put(TodoTable.COLUMN_SHIPPING_COST, data.get(i).getShippingCost());
 
-                getActivity().getContentResolver().insert(AppContentProvider.CONTENT_URI, values);
+                String query = "SELECT 1 FROM "+TodoTable.TABLE_NAME+" WHERE "+ TodoTable.COLUMN_ITEM_ID +" = ?";
+                Cursor cursor = getActivity().getContentResolver().query(AppContentProvider.CONTENT_URI, TodoTable.projection, query, new String[]{data.get(i).getId()}, null);
+
+                if(cursor.getCount() > 0){
+                    getActivity().getContentResolver().update(AppContentProvider.CONTENT_URI, values, TodoTable.COLUMN_ITEM_ID + " =?", new String[]{data.get(i).getId()});
+                }else{
+                    getActivity().getContentResolver().insert(AppContentProvider.CONTENT_URI, values);
+                }
             }
 
             getLoaderManager().initLoader(ID_LOADER_CURSOR, null, loaderCursor);
@@ -88,16 +97,8 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
         public Loader<Cursor> onCreateLoader(int id, Bundle args) {
 
             Log.v(TAG, "Cursor onCreateLoader " + id);
-            String[] projection = {
-                    TodoTable.COLUMN_ID,
-                    TodoTable.COLUMN_CURRENT_COST,
-                    TodoTable.COLUMN_ITEM_ID,
-                    TodoTable.COLUMN_THUMB_URL,
-                    TodoTable.COLUMN_TITLE,
-                    TodoTable.COLUMN_SHIPPING_COST
-            };
             CursorLoader cursorLoader = new CursorLoader(getActivity(),
-                    AppContentProvider.CONTENT_URI, projection, null, null, null);
+                    AppContentProvider.CONTENT_URI, TodoTable.projection, null, null, null);
             return cursorLoader;
         }
 
@@ -113,7 +114,11 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
                     item.setImageUrl(cursor.getString(cursor.getColumnIndex(TodoTable.COLUMN_THUMB_URL)));
                     item.setShippingCost(cursor.getString(cursor.getColumnIndex(TodoTable.COLUMN_SHIPPING_COST)));
                     item.setTitle(cursor.getString(cursor.getColumnIndex(TodoTable.COLUMN_TITLE)));
-                    datas.add(item);
+
+                    if(currentQuery == null || item.getTitle().toLowerCase().contains(currentQuery.toLowerCase())){
+                        datas.add(item);
+                    }
+
 
                 } while (cursor.moveToNext());
             }
@@ -121,7 +126,6 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
             listView = (ListView)view.findViewById(R.id.listView);
             adapter = new ItemAdapter(getActivity(), datas);
             listView.setAdapter(adapter);
-
         }
 
         @Override
@@ -164,7 +168,7 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
         Log.e(TAG, "onCreateView ");
 
         listView = (ListView) view.findViewById(R.id.listView);
-        showLoading();
+        //showLoading();
         listView.setOnScrollListener(new OnScrollListener() {
 
             @Override
@@ -184,8 +188,9 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
 
         Bundle bundle = new Bundle();
         bundle.putString("query", "fantasy");
-        getLoaderManager().initLoader(ID_LOADER_DATA, bundle, loaderData).forceLoad();
+//        getLoaderManager().initLoader(ID_LOADER_DATA, bundle, loaderData).forceLoad();
 
+        getLoaderManager().initLoader(ID_LOADER_CURSOR, null, loaderCursor);
         //runable.run();
 
         return view;
@@ -221,6 +226,8 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
 
         if (query.length() > 0) {
             showLoading();
+            currentQuery = query;
+
             Bundle bundle = new Bundle();
             bundle.putString("query", query);
             getLoaderManager().restartLoader(ID_LOADER_DATA, bundle, loaderData).forceLoad();
@@ -250,7 +257,7 @@ public class MainActivityFragment extends Fragment implements SearchView.OnQuery
     protected Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            Log.e("Got a new message", "ALO " + msg.arg1);
+            Log.e("Got a new message", "Start Update HERE " + msg.arg1);
 //            startSearch = true;
         }
     };

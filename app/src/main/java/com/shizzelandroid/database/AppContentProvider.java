@@ -54,9 +54,6 @@ public class AppContentProvider extends ContentProvider {
         // Uisng SQLiteQueryBuilder instead of query() method
         SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
 
-        // check if the caller has requested a column which does not exists
-        checkColumns(projection);
-
         // Set the table
         queryBuilder.setTables(TodoTable.TABLE_NAME);
 
@@ -169,26 +166,6 @@ public class AppContentProvider extends ContentProvider {
         }
         getContext().getContentResolver().notifyChange(uri, null);
         return rowsUpdated;
-    }
-
-    private void checkColumns(String[] projection) {
-        String[] available = {
-                TodoTable.COLUMN_ID,
-                TodoTable.COLUMN_CURRENT_COST,
-                TodoTable.COLUMN_ITEM_ID,
-                TodoTable.COLUMN_THUMB_URL,
-                TodoTable.COLUMN_TITLE,
-                TodoTable.COLUMN_SHIPPING_COST
-
-        };
-        if (projection != null) {
-            HashSet<String> requestedColumns = new HashSet<String>(Arrays.asList(projection));
-            HashSet<String> availableColumns = new HashSet<String>(Arrays.asList(available));
-            // check if all columns which are requested are available
-            if (!availableColumns.containsAll(requestedColumns)) {
-                throw new IllegalArgumentException("Unknown columns in projection");
-            }
-        }
     }
 
 }

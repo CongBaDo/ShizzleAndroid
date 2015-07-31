@@ -34,4 +34,13 @@ public class TodoTable {
         database.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
         onCreate(database);
     }
+
+    public static String[] projection = {
+            TodoTable.COLUMN_ID,
+            TodoTable.COLUMN_CURRENT_COST,
+            TodoTable.COLUMN_ITEM_ID,
+            TodoTable.COLUMN_THUMB_URL,
+            TodoTable.COLUMN_TITLE,
+            TodoTable.COLUMN_SHIPPING_COST
+    };
 }
